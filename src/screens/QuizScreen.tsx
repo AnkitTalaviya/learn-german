@@ -1,17 +1,24 @@
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 import PrimaryButton from '../components/PrimaryButton';
-import { allWords, categories, findCategory, Word } from '../data/vocabulary';
+import { allSeeds, categories, findCategory } from '../data/vocabulary';
 import { markWordLearned, saveQuizResult } from '../storage/progress';
 import { colors, radii, spacing } from '../theme';
+import { useWordEntries, EnrichedWord } from '../hooks/useWordEntries';
 import type { RootStackParamList } from '../navigation/AppNavigator';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Quiz'>;
 
 type Question = {
-  word: Word;
+  word: EnrichedWord;
   options: string[];
   answer: string;
 };
@@ -27,11 +34,12 @@ function shuffle<T>(values: T[]): T[] {
   return copy;
 }
 
-function buildQuestions(words: Word[], pool: Word[]): Question[] {
+function buildQuestions(words: EnrichedWord[]): Question[] {
+  if (words.length < 2) return [];
   const picks = shuffle(words).slice(0, Math.min(QUIZ_LENGTH, words.length));
   return picks.map((word) => {
     const distractors = shuffle(
-      pool.filter((candidate) => candidate.id !== word.id),
+      words.filter((candidate) => candidate.id !== word.id),
     )
       .slice(0, 3)
       .map((candidate) => candidate.english);
@@ -44,11 +52,18 @@ export default function QuizScreen({ navigation, route }: Props) {
   const categoryId = route.params?.categoryId;
   const category = categoryId ? findCategory(categoryId) : undefined;
 
-  const questions = useMemo(() => {
-    const source = category ? category.words : allWords();
-    const pool = allWords();
-    return buildQuestions(source, pool);
+  const seeds = useMemo(() => {
+    if (category) return category.words;
+    const pool = allSeeds();
+    return shuffle(pool).slice(0, Math.max(QUIZ_LENGTH + 4, 12));
   }, [category]);
+
+  const { entries, loading, error } = useWordEntries(seeds);
+
+  const questions = useMemo(() => {
+    if (loading || entries.length < Math.min(4, seeds.length)) return [];
+    return buildQuestions(entries);
+  }, [entries, loading, seeds.length]);
 
   const [index, setIndex] = useState(0);
   const [score, setScore] = useState(0);
@@ -71,10 +86,23 @@ export default function QuizScreen({ navigation, route }: Props) {
     });
   }, [done, score, category?.id, questions.length]);
 
+  if (error && entries.length === 0) {
+    return (
+      <View style={styles.empty}>
+        <Text style={styles.errorHeading}>Couldn’t load quiz data.</Text>
+        <Text style={styles.emptyText}>{error}</Text>
+        <PrimaryButton title="Go back" onPress={() => navigation.goBack()} />
+      </View>
+    );
+  }
+
   if (questions.length === 0) {
     return (
       <View style={styles.empty}>
-        <Text style={styles.emptyText}>No words to quiz yet.</Text>
+        <ActivityIndicator color={colors.primary} />
+        <Text style={styles.emptyText}>
+          Preparing questions from the translation API…
+        </Text>
       </View>
     );
   }
@@ -161,9 +189,8 @@ export default function QuizScreen({ navigation, route }: Props) {
                 ? colors.danger
                 : colors.card
             : colors.card;
-          const textColor = showState && (isAnswer || isChosen)
-            ? '#fff'
-            : colors.text;
+          const textColor =
+            showState && (isAnswer || isChosen) ? '#fff' : colors.text;
           return (
             <Pressable
               key={option}
@@ -184,11 +211,18 @@ export default function QuizScreen({ navigation, route }: Props) {
       </View>
       {selected !== null && (
         <View style={styles.feedback}>
-          <Text style={[styles.feedbackText, { color: isCorrect ? colors.success : colors.danger }]}>
+          <Text
+            style={[
+              styles.feedbackText,
+              { color: isCorrect ? colors.success : colors.danger },
+            ]}
+          >
             {isCorrect ? 'Richtig!' : `Answer: ${current.answer}`}
           </Text>
           <PrimaryButton
-            title={index === questions.length - 1 ? 'See results' : 'Next question'}
+            title={
+              index === questions.length - 1 ? 'See results' : 'Next question'
+            }
             onPress={handleNext}
           />
         </View>
@@ -211,9 +245,16 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    padding: spacing.lg,
+    gap: spacing.md,
   },
   emptyText: {
     color: colors.textMuted,
+    textAlign: 'center',
+  },
+  errorHeading: {
+    color: colors.danger,
+    fontWeight: '700',
   },
   counter: {
     color: colors.textMuted,

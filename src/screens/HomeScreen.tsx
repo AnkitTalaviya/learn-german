@@ -3,7 +3,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { categories, allWords } from '../data/vocabulary';
+import { categories, allSeeds } from '../data/vocabulary';
 import { getLearnedWords } from '../storage/progress';
 import { colors, radii, spacing } from '../theme';
 import PrimaryButton from '../components/PrimaryButton';
@@ -13,7 +13,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
 export default function HomeScreen({ navigation }: Props) {
   const [learnedCount, setLearnedCount] = useState(0);
-  const total = allWords().length;
+  const total = allSeeds().length;
 
   useFocusEffect(
     useCallback(() => {
@@ -34,7 +34,7 @@ export default function HomeScreen({ navigation }: Props) {
       <View style={styles.hero}>
         <Text style={styles.heroTitle}>Willkommen!</Text>
         <Text style={styles.heroSubtitle}>
-          Start your German journey one word at a time.
+          Translations powered by MyMemory and Tatoeba.
         </Text>
         <View style={styles.progressRow}>
           <View style={styles.progressBarBg}>

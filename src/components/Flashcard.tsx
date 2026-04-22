@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radii, spacing } from '../theme';
-import type { Word } from '../data/vocabulary';
+import type { EnrichedWord } from '../hooks/useWordEntries';
 
 type Props = {
-  word: Word;
+  word: EnrichedWord;
 };
 
 export default function Flashcard({ word }: Props) {
@@ -31,7 +31,9 @@ export default function Flashcard({ word }: Props) {
           {word.example && <Text style={styles.example}>{word.example}</Text>}
         </View>
       )}
-      <Text style={styles.hint}>Tap to flip</Text>
+      <Text style={styles.hint}>
+        Tap to flip • {word.source === 'cache' ? 'cached' : `via ${word.source}`}
+      </Text>
     </Pressable>
   );
 }

@@ -9,7 +9,8 @@ import {
   getQuizHistory,
   resetProgress,
 } from '../storage/progress';
-import { allWords, categories, findCategory } from '../data/vocabulary';
+import { allSeeds, categories, findCategory } from '../data/vocabulary';
+import { clearWordCache } from '../api/languageService';
 import { colors, radii, spacing } from '../theme';
 
 export default function ProgressScreen() {
@@ -29,21 +30,25 @@ export default function ProgressScreen() {
     }, [load]),
   );
 
-  const total = allWords().length;
+  const total = allSeeds().length;
   const percent = total === 0 ? 0 : Math.round((learned.length / total) * 100);
 
   const handleReset = () => {
-    Alert.alert('Reset progress?', 'This will clear all learned words and quiz history.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Reset',
-        style: 'destructive',
-        onPress: async () => {
-          await resetProgress();
-          load();
+    Alert.alert(
+      'Reset progress?',
+      'This clears learned words, quiz history, and the translation cache.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reset',
+          style: 'destructive',
+          onPress: async () => {
+            await Promise.all([resetProgress(), clearWordCache()]);
+            load();
+          },
         },
-      },
-    ]);
+      ],
+    );
   };
 
   return (

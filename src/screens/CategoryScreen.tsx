@@ -1,16 +1,24 @@
 import { useLayoutEffect } from 'react';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  FlatList,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 import { findCategory } from '../data/vocabulary';
 import PrimaryButton from '../components/PrimaryButton';
 import { colors, radii, spacing } from '../theme';
+import { useWordEntries } from '../hooks/useWordEntries';
 import type { RootStackParamList } from '../navigation/AppNavigator';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Category'>;
 
 export default function CategoryScreen({ navigation, route }: Props) {
   const category = findCategory(route.params.categoryId);
+  const { entries, loading, error } = useWordEntries(category?.words ?? []);
 
   useLayoutEffect(() => {
     navigation.setOptions({ title: category?.title ?? 'Category' });
@@ -48,18 +56,37 @@ export default function CategoryScreen({ navigation, route }: Props) {
         </View>
       </View>
 
-      <FlatList
-        data={category.words}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
-        renderItem={({ item }) => (
-          <View style={styles.row}>
-            <Text style={styles.german}>{item.german}</Text>
-            <Text style={styles.english}>{item.english}</Text>
-          </View>
-        )}
-      />
+      {error ? (
+        <View style={styles.status}>
+          <Text style={styles.errorText}>Could not load translations.</Text>
+          <Text style={styles.errorDetail}>{error}</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={entries}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.list}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          ListFooterComponent={
+            loading ? (
+              <View style={styles.loadingRow}>
+                <ActivityIndicator color={colors.primary} />
+                <Text style={styles.loadingText}>
+                  Fetching translations…
+                </Text>
+              </View>
+            ) : null
+          }
+          renderItem={({ item }) => (
+            <View style={styles.row}>
+              <Text style={styles.german}>{item.german}</Text>
+              <Text style={styles.english} numberOfLines={2}>
+                {item.english}
+              </Text>
+            </View>
+          )}
+        />
+      )}
     </View>
   );
 }
@@ -110,6 +137,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: spacing.md,
   },
   separator: {
     height: spacing.sm,
@@ -118,9 +146,36 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: colors.text,
+    flexShrink: 0,
   },
   english: {
     fontSize: 14,
     color: colors.textMuted,
+    flex: 1,
+    textAlign: 'right',
+  },
+  loadingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingTop: spacing.md,
+  },
+  loadingText: {
+    color: colors.textMuted,
+    fontSize: 13,
+  },
+  status: {
+    padding: spacing.lg,
+    alignItems: 'center',
+  },
+  errorText: {
+    color: colors.danger,
+    fontWeight: '700',
+  },
+  errorDetail: {
+    color: colors.textMuted,
+    marginTop: spacing.xs,
+    fontSize: 12,
   },
 });
