@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "Learn German",
+    "slug": "learn-german",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#0b3d91"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.learn.german"
+    },
+    "android": {
+      "package": "com.learn.german"
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}
