@@ -9,7 +9,7 @@ on:
 
 jobs:
   build-android:
-    name: Build debug APK
+    name: Build release APK
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
@@ -49,16 +49,17 @@ jobs:
           key: gradle-${{ runner.os }}-${{ hashFiles('android/**/*.gradle*', 'android/**/gradle-wrapper.properties') }}
           restore-keys: gradle-${{ runner.os }}-
 
-      - name: Build debug APK
+      - name: Build release APK
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew --no-daemon assembleDebug
+          ./gradlew --no-daemon assembleRelease
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: learn-german-debug-apk
-          path: android/app/build/outputs/apk/debug/*.apk
+          name: learn-german-release-apk
+          path: android/app/build/outputs/apk/release/*.apk
           if-no-files-found: error
           retention-days: 14
+
